@@ -4,7 +4,7 @@
  */
 
 
-namespace Plugin\Payment2checkout;
+namespace Plugin\Twocheckout;
 
 
 class Model
@@ -32,7 +32,7 @@ class Model
         );
 
 
-        $paymentId = ipDb()->insert('2checkout', $data);
+        $paymentId = ipDb()->insert('twocheckout', $data);
         return $paymentId;
     }
 
@@ -40,12 +40,12 @@ class Model
 
     public static function getPayment($paymentId)
     {
-        $order = ipDb()->selectRow('2checkout', '*', array('id' => $paymentId));
+        $order = ipDb()->selectRow('twocheckout', '*', array('id' => $paymentId));
         return $order;
     }
     public static function update($paymentId, $data)
     {
-        ipDb()->update('2checkout', $data, array('id' => $paymentId));
+        ipDb()->update('twocheckout', $data, array('id' => $paymentId));
     }
 
 

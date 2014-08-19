@@ -4,7 +4,7 @@
  */
 
 
-namespace Plugin\Payment2checkout;
+namespace Plugin\Twocheckout;
 
 
 class PaymentModel
@@ -50,7 +50,7 @@ class PaymentModel
 
         if (!$response["status"]) {
             ipLog()->error(
-                'Payment2checkout.ipn: notification check error',
+                'Twocheckout.ipn: notification check error',
                 $response
             );
             return;
@@ -66,7 +66,7 @@ class PaymentModel
 
 
         if ($test != $this->isTestMode()) {
-            ipLog()->error('Payment2checkout.ipn: IPN rejected. Test mode conflict', $response);
+            ipLog()->error('Twocheckout.ipn: IPN rejected. Test mode conflict', $response);
             return;
         }
 
@@ -77,12 +77,12 @@ class PaymentModel
                 $payment = Model::getPayment($paymentId);
 
                 if (!$payment) {
-                    ipLog()->error('Payment2checkout.ipn: Order not found.', array('paymentId' => $paymentId));
+                    ipLog()->error('Twocheckout.ipn: Order not found.', array('paymentId' => $paymentId));
                     return;
                 }
 
                 if ($payment['currency'] != $currency) {
-                    ipLog()->error('Payment2checkout.ipn: IPN rejected. Currency doesn\'t match', array('paypal currency' => $currency, 'expected currency' => $payment['currency']));
+                    ipLog()->error('Twocheckout.ipn: IPN rejected. Currency doesn\'t match', array('paypal currency' => $currency, 'expected currency' => $payment['currency']));
                     return;
                 }
 
@@ -91,22 +91,22 @@ class PaymentModel
                 $orderPrice = substr_replace($orderPrice, '.', -2, 0);
 
                 if ($amount != $orderPrice) {
-                    ipLog()->error('Payment2checkout.ipn: IPN rejected. Price doesn\'t match', array('paypal price' => $amount, 'expected price' => '' . $orderPrice));
+                    ipLog()->error('Twocheckout.ipn: IPN rejected. Price doesn\'t match', array('paypal price' => $amount, 'expected price' => '' . $orderPrice));
                     return;
                 }
 
                 if ($receiver != $this->getEmail()) {
-                    ipLog()->error('Payment2checkout.ipn: IPN rejected. Recipient doesn\'t match', array('paypal recipient' => $receiver, 'expected recipient' => $this->getEmail()));
+                    ipLog()->error('Twocheckout.ipn: IPN rejected. Recipient doesn\'t match', array('paypal recipient' => $receiver, 'expected recipient' => $this->getEmail()));
                     return;
                 }
 
                 if ($response["httpResponse"] != 'VERIFIED') {
-                    ipLog()->error('Payment2checkout.ipn: Paypal doesn\'t recognize the payment', $response);
+                    ipLog()->error('Twocheckout.ipn: Paypal doesn\'t recognize the payment', $response);
                     return;
                 }
 
                 if ($payment['isPaid']) {
-                    ipLog()->error('Payment2checkout.ipn: Order is already paid', $response);
+                    ipLog()->error('Twocheckout.ipn: Order is already paid', $response);
                     return;
                 }
 
@@ -118,7 +118,7 @@ class PaymentModel
                     'userId' => $payment['userId']
                 );
 
-                ipLog()->info('Payment2checkout.ipn: Successful payment', $info);
+                ipLog()->info('Twocheckout.ipn: Successful payment', $info);
 
                 $newData = array(
                     'isPaid' => 1
@@ -197,10 +197,11 @@ class PaymentModel
 
     }
 
-    public function getPaypalForm($paymentId)
+    public function get2checkoutForm($paymentId)
     {
+        require_once('lib/Twocheckout.php');
         if (!$this->getEmail()) {
-            throw new \Ip\Exception('Please enter configuration values for Payment2checkout plugin');
+            throw new \Ip\Exception('Please enter configuration values for Twocheckout plugin');
         }
 
 
@@ -227,8 +228,8 @@ class PaymentModel
             'currency_code' => $currency,
             'no_shipping' => 1,
             'custom' => json_encode($privateData),
-            'return' => ipRouteUrl('Payment2checkout_userBack'),
-            'notify_url' => ipRouteUrl('Payment2checkout_ipn'),
+            'return' => ipRouteUrl('Twocheckout_userBack'),
+            'notify_url' => ipRouteUrl('Twocheckout_ipn'),
             'item_name' => $payment['title'],
             'item_number' => $payment['id']
         );
@@ -239,21 +240,15 @@ class PaymentModel
 
 
 
-        $form = new \Ip\Form();
-        $form->addClass('ipsPayPalAutosubmit');
-        $form->setAction($this->getPayPalUrl());
-        $form->setAjaxSubmit(0);
+        $params = array(
+            'sid' => '1817037',
+            'mode' => '2CO',
+            'li_0_name' => 'Test Product',
+            'li_0_price' => '0.01'
+        );
+        $form = \Twocheckout_Charge::form($params, 'auto');
 
-        foreach ($values as $valueKey => $value) {
-            $field = new \Ip\Form\Field\Hidden(
-                array(
-                    'name' => $valueKey,
-                    'value' => $value
-                ));
-            $form->addField($field);
-        }
 
-        $form->setMethod(\Ip\Form::METHOD_POST);
         return $form;
     }
 
@@ -286,9 +281,9 @@ class PaymentModel
     public function getEmail()
     {
         if ($this->isTestMode()) {
-            return ipGetOption('Payment2checkout.paypalEmailTest');
+            return ipGetOption('Twocheckout.paypalEmailTest');
         } else {
-            return ipGetOption('Payment2checkout.paypalEmail');
+            return ipGetOption('Twocheckout.paypalEmail');
         }
     }
 
@@ -303,18 +298,18 @@ class PaymentModel
 
     public function isTestMode()
     {
-        return ipGetOption('Payment2checkout.mode') == self::MODE_TEST;
+        return ipGetOption('Twocheckout.mode') == self::MODE_TEST;
     }
 
 
     public function isSkipMode()
     {
-        return ipGetOption('Payment2checkout.mode') == self::MODE_SKIP;
+        return ipGetOption('Twocheckout.mode') == self::MODE_SKIP;
     }
 
     public function isProductionMode()
     {
-        return ipGetOption('Payment2checkout.mode') == self::MODE_PRODUCTION;
+        return ipGetOption('Twocheckout.mode') == self::MODE_PRODUCTION;
     }
 
     public function correctConfiguration()

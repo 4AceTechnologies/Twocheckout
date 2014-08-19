@@ -5,7 +5,7 @@
 
 
 
-namespace Plugin\Payment2checkout;
+namespace Plugin\Twocheckout;
 
 
 class SiteController extends \Ip\Controller
@@ -24,14 +24,14 @@ class SiteController extends \Ip\Controller
         }
 
         if ($order['isPaid']) {
-            $statusPageUrl = ipRouteUrl('Payment2checkout_status', array('paymentId' => $paymentId, 'securityCode' => $securityCode));
+            $statusPageUrl = ipRouteUrl('Twocheckout_status', array('paymentId' => $paymentId, 'securityCode' => $securityCode));
             $answer = new \Ip\Response\Redirect($statusPageUrl);
         } else {
             //redirect to the payment
             $paymentModel = PaymentModel::instance();
 
             $data = array(
-                'form' => $paymentModel->getPaypalForm($paymentId)
+                'form' => $paymentModel->get2checkoutForm($paymentId)
             );
 
             $answer = ipView('view/page/paymentRedirect.php', $data)->render();
@@ -54,7 +54,7 @@ class SiteController extends \Ip\Controller
 
         $data = array(
             'payment' => $payment,
-            'paymentUrl' => ipRouteUrl('Payment2checkout_pay', array('paymentId' => $payment['id'], 'securityCode' => $payment['securityCode']))
+            'paymentUrl' => ipRouteUrl('Twocheckout_pay', array('paymentId' => $payment['id'], 'securityCode' => $payment['securityCode']))
         );
         $view = ipView('view/page/status.php', $data);
         return $view;

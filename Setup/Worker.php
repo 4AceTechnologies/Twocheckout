@@ -6,7 +6,7 @@
 
 
 
-namespace Plugin\Payment2checkout\Setup;
+namespace Plugin\Twocheckout\Setup;
 
 
 class Worker
@@ -14,7 +14,7 @@ class Worker
     public function activate()
     {
 
-        $table = ipTable('2checkout');
+        $table = ipTable('twocheckout');
         $sql="
         CREATE TABLE IF NOT EXISTS $table (
           `id` int(11) NOT NULL AUTO_INCREMENT,

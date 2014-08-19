@@ -5,7 +5,7 @@
 
 
 
-namespace Plugin\Payment2checkout;
+namespace Plugin\Twocheckout;
 
 
 class Filter

@@ -4,7 +4,7 @@
  */
 
 
-namespace Plugin\Payment2checkout;
+namespace Plugin\Twocheckout;
 
 
 class Payment extends \Ip\Payment
@@ -36,6 +36,6 @@ class Payment extends \Ip\Payment
             'paymentId' => $paymentId,
             'securityCode' => $payment['securityCode']
         );
-        return ipRouteUrl('Payment2checkout_pay', $urlData);
+        return ipRouteUrl('Twocheckout_pay', $urlData);
     }
 }

@@ -4,7 +4,7 @@
  */
 
 
-namespace Plugin\Payment2checkout;
+namespace Plugin\Twocheckout;
 
 
 class PublicController extends \Ip\Controller
@@ -31,20 +31,20 @@ class PublicController extends \Ip\Controller
         $payment = Model::getPayment($customData['paymentId']);
 
         if ($payment['isPaid']) {
-            $orderUrl = ipRouteUrl('Payment2checkout_status', array('paymentId' => $customData['paymentId'], 'securityCode' => $customData['securityCode']));
+            $orderUrl = ipRouteUrl('Twocheckout_status', array('paymentId' => $customData['paymentId'], 'securityCode' => $customData['securityCode']));
             $response = new \Ip\Response\Redirect($orderUrl);
 
             if (!empty($payment['successUrl'])) {
                 $response = new \Ip\Response\Redirect($payment['successUrl']);
             }
-            $response = ipFilter('Payment2checkout_userBackResponse', $response);
+            $response = ipFilter('Twocheckout_userBackResponse', $response);
             return $response;
         } else {
             $viewData = array(
                 'payment' => $payment
             );
             $response = ipView('view/paymentError.php', $viewData);
-            $response = ipFilter('Payment2checkout_userBackResponseError', $response);
+            $response = ipFilter('Twocheckout_userBackResponseError', $response);
             return $response;
         }
 
@@ -55,7 +55,7 @@ class PublicController extends \Ip\Controller
     {
         $paymentModel = PaymentModel::instance();
         $postData = ipRequest()->getPost();
-        ipLog()->info('Payment2checkout.ipn: 2checkout notification', $postData);
+        ipLog()->info('Twocheckout.ipn: 2checkout notification', $postData);
         $paymentModel->processCallback($postData);
     }
 

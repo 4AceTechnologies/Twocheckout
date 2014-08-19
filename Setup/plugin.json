@@ -1,7 +1,7 @@
 {
     "title": "2checkout",
     "version": "1.00",
-    "name": "Payment2checkout",
+    "name": "Twocheckout",
     "description": "2checkout payment method to accept Accept Credit Cards, PayPal, and Debit Cards.",
     "author": "ImpressPages"
 }

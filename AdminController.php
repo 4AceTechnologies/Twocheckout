@@ -11,64 +11,64 @@
  * Time: 2:19 PM
  */
 
-namespace Plugin\Payment2checkout;
+namespace Plugin\Twocheckout;
 
 
 class AdminController {
     public function index()
     {
         $config = array(
-            'table' => '2checkout',
+            'table' => 'twocheckout',
             'orderBy' => '`id` desc',
             'fields' => array(
                 array(
-                    'label' => __('Order ID', 'Payment2checkout', false),
+                    'label' => __('Order ID', 'Twocheckout', false),
                     'field' => 'orderId',
                     'allowUpdate' => false,
                     'allowInsert' => false
                 ),
                 array(
-                    'label' => __('Title', 'Payment2checkout', false),
+                    'label' => __('Title', 'Twocheckout', false),
                     'field' => 'title'
                 ),
                 array(
-                    'label' => __('Price', 'Payment2checkout', false),
+                    'label' => __('Price', 'Twocheckout', false),
                     'field' => 'price',
                     'type' => 'Currency',
                     'currencyField' => 'currency'
                 ),
                 array(
-                    'label' => __('Currency', 'Payment2checkout', false),
+                    'label' => __('Currency', 'Twocheckout', false),
                     'field' => 'currency'
                 ),
                 array(
-                    'label' => __('Paid', 'Payment2checkout', false),
+                    'label' => __('Paid', 'Twocheckout', false),
                     'field' => 'isPaid',
                     'type' => 'Checkbox'
                 ),
                 array(
-                    'label' => __('User ID', 'Payment2checkout', false),
+                    'label' => __('User ID', 'Twocheckout', false),
                     'field' => 'userId',
                     'type' => 'Integer'
                 ),
                 array(
-                    'label' => __('First Name', 'Payment2checkout', false),
+                    'label' => __('First Name', 'Twocheckout', false),
                     'field' => 'payer_first_name'
                 ),
                 array(
-                    'label' => __('Last Name', 'Payment2checkout', false),
+                    'label' => __('Last Name', 'Twocheckout', false),
                     'field' => 'payer_last_name'
                 ),
                 array(
-                    'label' => __('Email', 'Payment2checkout', false),
+                    'label' => __('Email', 'Twocheckout', false),
                     'field' => 'payer_email'
                 ),
                 array(
-                    'label' => __('Country', 'Payment2checkout', false),
+                    'label' => __('Country', 'Twocheckout', false),
                     'field' => 'payer_country'
                 ),
                 array(
-                    'label' => __('Created At', 'Payment2checkout', false),
+                    'label' => __('Created At', 'Twocheckout', false),
                     'field' => 'createdAt'
                 ),
 
