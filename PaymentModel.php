@@ -44,9 +44,7 @@ class PaymentModel
             return;
         }
 
-        $postUrl = $this->getPayPalUrl();
 
-        $response = $this->httpPost($postUrl, $postData);
 
         if (!$response["status"]) {
             ipLog()->error(
@@ -95,8 +93,8 @@ class PaymentModel
                     return;
                 }
 
-                if ($receiver != $this->getEmail()) {
-                    ipLog()->error('Twocheckout.ipn: IPN rejected. Recipient doesn\'t match', array('paypal recipient' => $receiver, 'expected recipient' => $this->getEmail()));
+                if ($receiver != $this->getSid()) {
+                    ipLog()->error('Twocheckout.ipn: IPN rejected. Recipient doesn\'t match', array('paypal recipient' => $receiver, 'expected recipient' => $this->getSid()));
                     return;
                 }
 
@@ -156,51 +154,12 @@ class PaymentModel
     }
 
 
-    /**
-     *
-     * Enter description here ...
-     * @param string $url
-     * @param array $values
-     * @return array
-     */
-    private function httpPost($url, $values)
-    {
-        $tmpAr = array_merge($values, array("cmd" => "_notify-validate"));
-        $postFieldsAr = array();
-        foreach ($tmpAr as $name => $value) {
-            $postFieldsAr[] = "$name=" . urlencode($value);
-        }
-        $postFields_ = implode("&", $postFieldsAr);
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_VERBOSE, 1);
-
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_POST, 1);
-
-        //setting the nvpreq as POST FIELD to curl
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields_);
-
-        //getting response from server
-        $httpResponse = curl_exec($ch);
-
-        if (!$httpResponse) {
-            return array("status" => false, "error_msg" => curl_error($ch), "error_no" => curl_errno($ch));
-        }
-
-
-        return array("status" => true, "httpResponse" => $httpResponse);
-
-    }
 
     public function get2checkoutForm($paymentId)
     {
         require_once('lib/Twocheckout.php');
-        if (!$this->getEmail()) {
+        if (!$this->getSid()) {
             throw new \Ip\Exception('Please enter configuration values for Twocheckout plugin');
         }
 
@@ -221,16 +180,14 @@ class PaymentModel
 
 
         $values = array(
-            'cmd' => '_xclick',
-            'character' => 'utf-8',
-            'business' => $this->getEmail(),
-            'amount' => $payment['price'] / 100,
-            'currency_code' => $currency,
-            'no_shipping' => 1,
-            'custom' => json_encode($privateData),
+//            'business' => $this->getSid(),
+//            'amount' => $payment['price'] / 100,
+//            'currency_code' => $currency,
+//            'no_shipping' => 1,
+//            'custom' => json_encode($privateData),
             'return' => ipRouteUrl('Twocheckout_userBack'),
             'notify_url' => ipRouteUrl('Twocheckout_ipn'),
-            'item_name' => $payment['title'],
+//            'item_name' => $payment['title'],
             'item_number' => $payment['id']
         );
 
@@ -243,8 +200,12 @@ class PaymentModel
         $params = array(
             'sid' => '1817037',
             'mode' => '2CO',
-            'li_0_name' => 'Test Product',
-            'li_0_price' => '0.01'
+            'li_0_product_id' => $payment['id'],
+            'li_0_name' => $payment['title'],
+            'li_0_price' => $payment['price'] / 100,    
+            'currency_code' => $currency,
+            'custom' => json_encode($privateData),
+            'demo' => $this->isTestMode() ? 'Y' : 'N',
         );
         $form = \Twocheckout_Charge::form($params, 'auto');
 
@@ -278,23 +239,16 @@ class PaymentModel
     }
 
 
-    public function getEmail()
+    public function getSid()
     {
         if ($this->isTestMode()) {
-            return ipGetOption('Twocheckout.paypalEmailTest');
+            return ipGetOption('Twocheckout.testSid');
         } else {
-            return ipGetOption('Twocheckout.paypalEmail');
+            return ipGetOption('Twocheckout.sid');
         }
     }
 
-    public function getPayPalUrl()
-    {
-        if ($this->isTestMode()) {
-            return self::PAYPAL_POST_URL_TEST;
-        } else {
-            return self::PAYPAL_POST_URL;
-        }
-    }
+
 
     public function isTestMode()
     {
@@ -314,7 +268,7 @@ class PaymentModel
 
     public function correctConfiguration()
     {
-        if ($this->getActive() && $this->getEmail()) {
+        if ($this->getActive() && $this->getSid()) {
             return true;
         } else {
             return false;
