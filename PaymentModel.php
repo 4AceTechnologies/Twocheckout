@@ -38,7 +38,7 @@ class PaymentModel
         return self::$instance;
     }
 
-    public function processCallback($postData)
+    public function processCallback($params)
     {
         require_once('lib/Twocheckout.php');
 
@@ -66,12 +66,11 @@ class PaymentModel
         if (!empty($passback['response_code']) && $passback['response_code'] = 'Success') {
             //successful payment
 
-            $customData = json_decode($postData['custom'], true);
-
+            $customData = json_decode($params['custom'], true);
             $paymentId = isset($customData['paymentId']) ? $customData['paymentId'] : null;
-            $currency = isset($postData['mc_currency']) ? $postData['mc_currency'] : null;
-            $receiver = isset($postData['receiver_email']) ? $postData['receiver_email'] : null;
-            $amount = isset($postData['mc_gross']) ? $postData['mc_gross'] : null;
+            $currency = isset($params['currency_code']) ? $params['currency_code'] : null;
+            $receiver = isset($params['sid']) ? $params['sid'] : null;
+            $amount = isset($params['li_0_price']) ? $params['li_0_price'] : null;
 
             $payment = Model::getPayment($paymentId);
 
@@ -81,7 +80,7 @@ class PaymentModel
             }
 
             if ($payment['currency'] != $currency) {
-                ipLog()->error('Twocheckout.ipn: IPN rejected. Currency doesn\'t match', array('paypal currency' => $currency, 'expected currency' => $payment['currency']));
+                ipLog()->error('Twocheckout.ipn: IPN rejected. Currency doesn\'t match', array('notification currency' => $currency, 'expected currency' => $payment['currency']));
                 return;
             }
 
@@ -90,17 +89,12 @@ class PaymentModel
             $orderPrice = substr_replace($orderPrice, '.', -2, 0);
 
             if ($amount != $orderPrice) {
-                ipLog()->error('Twocheckout.ipn: IPN rejected. Price doesn\'t match', array('paypal price' => $amount, 'expected price' => '' . $orderPrice));
+                ipLog()->error('Twocheckout.ipn: IPN rejected. Price doesn\'t match', array('notification price' => $amount, 'expected price' => '' . $orderPrice));
                 return;
             }
 
             if ($receiver != $this->getSid()) {
-                ipLog()->error('Twocheckout.ipn: IPN rejected. Recipient doesn\'t match', array('paypal recipient' => $receiver, 'expected recipient' => $this->getSid()));
-                return;
-            }
-
-            if ($response["httpResponse"] != 'VERIFIED') {
-                ipLog()->error('Twocheckout.ipn: Paypal doesn\'t recognize the payment', $response);
+                ipLog()->error('Twocheckout.ipn: IPN rejected. Recipient doesn\'t match', array('notification recipient' => $receiver, 'expected recipient' => $this->getSid()));
                 return;
             }
 
@@ -122,21 +116,21 @@ class PaymentModel
             $newData = array(
                 'isPaid' => 1
             );
-            if (isset($postData['first_name'])) {
-                $newData['payer_first_name'] = $postData['first_name'];
-                $info['payer_first_name'] = $postData['first_name'];
+            if (isset($params['first_name'])) {
+                $newData['payer_first_name'] = $params['first_name'];
+                $info['payer_first_name'] = $params['first_name'];
             }
-            if (isset($postData['last_name'])) {
-                $newData['payer_last_name'] = $postData['last_name'];
-                $info['payer_last_name'] = $postData['last_name'];
+            if (isset($params['last_name'])) {
+                $newData['payer_last_name'] = $params['last_name'];
+                $info['payer_last_name'] = $params['last_name'];
             }
-            if (isset($postData['payer_email'])) {
-                $newData['payer_email'] = $postData['payer_email'];
-                $info['payer_email'] = $postData['payer_email'];
+            if (isset($params['email'])) {
+                $newData['payer_email'] = $params['email'];
+                $info['payer_email'] = $params['email'];
             }
-            if (isset($postData['residence_country'])) {
-                $newData['payer_country'] = $postData['residence_country'];
-                $info['payer_country'] = $postData['residence_country'];
+            if (isset($params['country'])) {
+                $newData['payer_country'] = $params['country'];
+                $info['payer_country'] = $params['country'];
             }
 
             Model::update($paymentId, $newData);

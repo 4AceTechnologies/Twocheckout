@@ -9,7 +9,7 @@ class Twocheckout_Charge extends Twocheckout
 
         foreach ($params as $key => $value)
         {
-            echo '<input type="hidden" name="'.$key.'" value="'.$value.'"/>';
+            echo '<input type="hidden" name="'.escAttr($key).'" value="'.escAttr($value).'"/>';
         }
         if ($type == 'auto') {
             echo '<input type="submit" value="Click here if you are not redirected automatically" /></form>';

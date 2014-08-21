@@ -16,7 +16,7 @@ class PublicController extends \Ip\Controller
     {
         $this->processNotification();
 
-        $customData = json_decode(ipRequest()->getPost('custom'), true);
+        $customData = json_decode(ipRequest()->getRequest('custom'), true);
         if (empty($customData['paymentId'])) {
             throw new \Ip\Exception("Unknown order ID");
         }
