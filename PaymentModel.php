@@ -40,115 +40,121 @@ class PaymentModel
 
     public function processCallback($postData)
     {
-        if (empty($postData['txn_type'])) {
-            return;
+        require_once('lib/Twocheckout.php');
+
+        if (ipRequest()->isPost()) { //no user. Just the notification
+            $params = array();
+            foreach (ipRequest()->getPost() as $k => $v) {
+                $params[$k] = $v;
+            }
+
+            $passback = \Twocheckout_Notification::check($params, $this->secretWord());
+        } else { //notification data and user
+            $params = array();
+            foreach (ipRequest()->getQuery() as $k => $v) {
+                $params[$k] = $v;
+            }
+
+            if ($this->isTestMode()) {
+                $params['order_number'] = 1;
+            }
+
+            $passback = \Twocheckout_Return::check($params, $this->secretWord());
         }
 
 
+        if (!empty($passback['response_code']) && $passback['response_code'] = 'Success') {
+            //successful payment
 
-        if (!$response["status"]) {
+            $customData = json_decode($postData['custom'], true);
+
+            $paymentId = isset($customData['paymentId']) ? $customData['paymentId'] : null;
+            $currency = isset($postData['mc_currency']) ? $postData['mc_currency'] : null;
+            $receiver = isset($postData['receiver_email']) ? $postData['receiver_email'] : null;
+            $amount = isset($postData['mc_gross']) ? $postData['mc_gross'] : null;
+
+            $payment = Model::getPayment($paymentId);
+
+            if (!$payment) {
+                ipLog()->error('Twocheckout.ipn: Order not found.', array('paymentId' => $paymentId));
+                return;
+            }
+
+            if ($payment['currency'] != $currency) {
+                ipLog()->error('Twocheckout.ipn: IPN rejected. Currency doesn\'t match', array('paypal currency' => $currency, 'expected currency' => $payment['currency']));
+                return;
+            }
+
+            $orderPrice = $payment['price'];
+            $orderPrice = str_pad($orderPrice, 3, "0", STR_PAD_LEFT);
+            $orderPrice = substr_replace($orderPrice, '.', -2, 0);
+
+            if ($amount != $orderPrice) {
+                ipLog()->error('Twocheckout.ipn: IPN rejected. Price doesn\'t match', array('paypal price' => $amount, 'expected price' => '' . $orderPrice));
+                return;
+            }
+
+            if ($receiver != $this->getSid()) {
+                ipLog()->error('Twocheckout.ipn: IPN rejected. Recipient doesn\'t match', array('paypal recipient' => $receiver, 'expected recipient' => $this->getSid()));
+                return;
+            }
+
+            if ($response["httpResponse"] != 'VERIFIED') {
+                ipLog()->error('Twocheckout.ipn: Paypal doesn\'t recognize the payment', $response);
+                return;
+            }
+
+            if ($payment['isPaid']) {
+                ipLog()->error('Twocheckout.ipn: Order is already paid', $response);
+                return;
+            }
+
+            $info = array(
+                'id' => $payment['orderId'],
+                'paymentId' => $payment['id'],
+                'paymentMethod' => '2checkout',
+                'title' => $payment['title'],
+                'userId' => $payment['userId']
+            );
+
+            ipLog()->info('Twocheckout.ipn: Successful payment', $info);
+
+            $newData = array(
+                'isPaid' => 1
+            );
+            if (isset($postData['first_name'])) {
+                $newData['payer_first_name'] = $postData['first_name'];
+                $info['payer_first_name'] = $postData['first_name'];
+            }
+            if (isset($postData['last_name'])) {
+                $newData['payer_last_name'] = $postData['last_name'];
+                $info['payer_last_name'] = $postData['last_name'];
+            }
+            if (isset($postData['payer_email'])) {
+                $newData['payer_email'] = $postData['payer_email'];
+                $info['payer_email'] = $postData['payer_email'];
+            }
+            if (isset($postData['residence_country'])) {
+                $newData['payer_country'] = $postData['residence_country'];
+                $info['payer_country'] = $postData['residence_country'];
+            }
+
+            Model::update($paymentId, $newData);
+
+
+            ipEvent('ipPaymentReceived', $info);
+
+        } else {
+            //fail
             ipLog()->error(
                 'Twocheckout.ipn: notification check error',
-                $response
+                $params
             );
             return;
+
         }
 
-        $customData = json_decode($postData['custom'], true);
-
-        $paymentId = isset($customData['paymentId']) ? $customData['paymentId'] : null;
-        $currency = isset($postData['mc_currency']) ? $postData['mc_currency'] : null;
-        $receiver = isset($postData['receiver_email']) ? $postData['receiver_email'] : null;
-        $amount = isset($postData['mc_gross']) ? $postData['mc_gross'] : null;
-        $test = isset($postData['test_ipn']) ? $postData['test_ipn'] : null;
-
-
-        if ($test != $this->isTestMode()) {
-            ipLog()->error('Twocheckout.ipn: IPN rejected. Test mode conflict', $response);
-            return;
-        }
-
-
-
-        switch ($postData['payment_status']) {
-            case 'Completed':
-                $payment = Model::getPayment($paymentId);
-
-                if (!$payment) {
-                    ipLog()->error('Twocheckout.ipn: Order not found.', array('paymentId' => $paymentId));
-                    return;
-                }
-
-                if ($payment['currency'] != $currency) {
-                    ipLog()->error('Twocheckout.ipn: IPN rejected. Currency doesn\'t match', array('paypal currency' => $currency, 'expected currency' => $payment['currency']));
-                    return;
-                }
-
-                $orderPrice = $payment['price'];
-                $orderPrice = str_pad($orderPrice, 3, "0", STR_PAD_LEFT);
-                $orderPrice = substr_replace($orderPrice, '.', -2, 0);
-
-                if ($amount != $orderPrice) {
-                    ipLog()->error('Twocheckout.ipn: IPN rejected. Price doesn\'t match', array('paypal price' => $amount, 'expected price' => '' . $orderPrice));
-                    return;
-                }
-
-                if ($receiver != $this->getSid()) {
-                    ipLog()->error('Twocheckout.ipn: IPN rejected. Recipient doesn\'t match', array('paypal recipient' => $receiver, 'expected recipient' => $this->getSid()));
-                    return;
-                }
-
-                if ($response["httpResponse"] != 'VERIFIED') {
-                    ipLog()->error('Twocheckout.ipn: Paypal doesn\'t recognize the payment', $response);
-                    return;
-                }
-
-                if ($payment['isPaid']) {
-                    ipLog()->error('Twocheckout.ipn: Order is already paid', $response);
-                    return;
-                }
-
-                $info = array(
-                    'id' => $payment['orderId'],
-                    'paymentId' => $payment['id'],
-                    'paymentMethod' => '2checkout',
-                    'title' => $payment['title'],
-                    'userId' => $payment['userId']
-                );
-
-                ipLog()->info('Twocheckout.ipn: Successful payment', $info);
-
-                $newData = array(
-                    'isPaid' => 1
-                );
-                if (isset($postData['first_name'])) {
-                    $newData['payer_first_name'] = $postData['first_name'];
-                    $info['payer_first_name'] = $postData['first_name'];
-                }
-                if (isset($postData['last_name'])) {
-                    $newData['payer_last_name'] = $postData['last_name'];
-                    $info['payer_last_name'] = $postData['last_name'];
-                }
-                if (isset($postData['payer_email'])) {
-                    $newData['payer_email'] = $postData['payer_email'];
-                    $info['payer_email'] = $postData['payer_email'];
-                }
-                if (isset($postData['residence_country'])) {
-                    $newData['payer_country'] = $postData['residence_country'];
-                    $info['payer_country'] = $postData['residence_country'];
-                }
-
-                Model::update($paymentId, $newData);
-
-
-                ipEvent('ipPaymentReceived', $info);
-
-
-                break;
-        }
-
-
-
+        return;
 
 
     }
@@ -179,33 +185,18 @@ class PaymentModel
 
 
 
-        $values = array(
-//            'business' => $this->getSid(),
-//            'amount' => $payment['price'] / 100,
-//            'currency_code' => $currency,
-//            'no_shipping' => 1,
-//            'custom' => json_encode($privateData),
-            'return' => ipRouteUrl('Twocheckout_userBack'),
-            'notify_url' => ipRouteUrl('Twocheckout_ipn'),
-//            'item_name' => $payment['title'],
-            'item_number' => $payment['id']
-        );
-
-        if (!empty($payment['cancelUrl'])) {
-            $values['cancel_return'] = $payment['cancelUrl'];
-        }
-
 
 
         $params = array(
-            'sid' => '1817037',
+            'sid' => $this->getSid(),
             'mode' => '2CO',
             'li_0_product_id' => $payment['id'],
             'li_0_name' => $payment['title'],
-            'li_0_price' => $payment['price'] / 100,    
+            'li_0_price' => $payment['price'] / 100,
             'currency_code' => $currency,
             'custom' => json_encode($privateData),
             'demo' => $this->isTestMode() ? 'Y' : 'N',
+            'x_receipt_link_url' => ipRouteUrl('Twocheckout_return'),
         );
         $form = \Twocheckout_Charge::form($params, 'auto');
 
@@ -264,6 +255,11 @@ class PaymentModel
     public function isProductionMode()
     {
         return ipGetOption('Twocheckout.mode') == self::MODE_PRODUCTION;
+    }
+
+    public function secretWord()
+    {
+        return ipGetOption('Twocheckout.secretWord');
     }
 
     public function correctConfiguration()

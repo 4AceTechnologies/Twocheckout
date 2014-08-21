@@ -28,7 +28,7 @@ class Model
             'price' => $paymentData['price'],
             'userId' => $userId,
             'securityCode' => self::randomString(32),
-            'createdAt' => date('Y-m-d H:i:s'),
+            'createdAt' => date('Y-m-d H:i:s')
         );
 
 

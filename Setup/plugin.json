@@ -24,6 +24,13 @@
             "type": "text",
             "note": "The one you create in 2checkout sandbox",
             "default": ""
+        },
+        {
+            "label": "Secret word",
+            "name": "secretWord",
+            "type": "text",
+            "note": "Has to match sected word on your 2chekcout account -> site management section.",
+            "default": "tango"
         }
 
     ]
