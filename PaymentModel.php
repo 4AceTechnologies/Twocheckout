@@ -113,30 +113,26 @@ class PaymentModel
 
             ipLog()->info('Twocheckout.ipn: Successful payment', $info);
 
-            $newData = array(
-                'isPaid' => 1
-            );
+            $newData = array();
+            $eventData = array();
             if (isset($params['first_name'])) {
                 $newData['payer_first_name'] = $params['first_name'];
-                $info['payer_first_name'] = $params['first_name'];
+                $eventData['payer_first_name'] = $params['first_name'];
             }
             if (isset($params['last_name'])) {
                 $newData['payer_last_name'] = $params['last_name'];
-                $info['payer_last_name'] = $params['last_name'];
+                $eventData['payer_last_name'] = $params['last_name'];
             }
             if (isset($params['email'])) {
                 $newData['payer_email'] = $params['email'];
-                $info['payer_email'] = $params['email'];
+                $eventData['payer_email'] = $params['email'];
             }
             if (isset($params['country'])) {
                 $newData['payer_country'] = $params['country'];
-                $info['payer_country'] = $params['country'];
+                $eventData['payer_country'] = $params['country'];
             }
 
-            Model::update($paymentId, $newData);
-
-
-            ipEvent('ipPaymentReceived', $info);
+            $this->markAsPaid($paymentId, $newData, $eventData);
 
         } else {
             //fail
@@ -153,6 +149,24 @@ class PaymentModel
 
     }
 
+    public function markAsPaid($paymentId, $dbData = array(), $eventData = array())
+    {
+        $payment = Model::getPayment($paymentId);
+
+        $dbData['isPaid'] = 1;
+        Model::update($paymentId, $dbData);
+
+        $info = array(
+            'id' => $payment['orderId'],
+            'paymentId' => $payment['id'],
+            'paymentMethod' => '2checkout',
+            'title' => $payment['title'],
+            'userId' => $payment['userId']
+        );
+        $info = array_merge($info, $eventData);
+        ipEvent('ipPaymentReceived', $info);
+
+    }
 
 
 

@@ -27,13 +27,7 @@ class PublicController extends \Ip\Controller
         $payment = Model::getPayment($customData['paymentId']);
 
         if ($payment['isPaid']) {
-            $orderUrl = ipRouteUrl('Twocheckout_status', array('paymentId' => $customData['paymentId'], 'securityCode' => $customData['securityCode']));
-            $response = new \Ip\Response\Redirect($orderUrl);
-
-            if (!empty($payment['successUrl'])) {
-                $response = new \Ip\Response\Redirect($payment['successUrl']);
-            }
-            $response = ipFilter('Twocheckout_userBackResponse', $response);
+            $response = Helper::responseAfterPayment($customData['paymentId'], $customData['securityCode']);
             return $response;
         } else {
             $viewData = array(
