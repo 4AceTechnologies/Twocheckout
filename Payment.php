@@ -19,6 +19,12 @@ class Payment extends \Ip\Payment
         return ipFileUrl('Plugin/Twocheckout/assets/2checkout.png');
     }
 
+    public function html()
+    {
+        return ipView('view/paymentWindowHtml.php');
+    }
+
+
     /**
      * This method should generate payment URL.
      * Typical actions of this method:
