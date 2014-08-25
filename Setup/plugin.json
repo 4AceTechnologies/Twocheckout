@@ -25,7 +25,6 @@
             "note": "The one you create in 2checkout sandbox",
             "default": ""
         },
-,
         {
             "label": "Secret word",
             "name": "secretWord",
