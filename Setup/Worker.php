@@ -19,7 +19,7 @@ class Worker
             throw new \Ip\Exception('ImpressPages 4.2.0 or later required');
 
         }
-        
+
         $table = ipTable('twocheckout');
         $sql="
         CREATE TABLE IF NOT EXISTS $table (
